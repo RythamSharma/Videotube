@@ -124,6 +124,9 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!videofile) {
       throw new ApiError(401, "video not found");
     }
+    if(!videofile.isPublished){
+      throw new ApiError(401, "Video Unpublished")
+    }
     res
       .status(200)
       .send(new ApiResponse(200, videofile, "video fetched successfully"));
