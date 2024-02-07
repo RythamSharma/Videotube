@@ -65,7 +65,7 @@ const registerUser = asyncHandler(async (req, res) => {
     fullname,
     password,
     avatar: "",
-    avatarId:"",
+    avatarId: "",
     coverImage: "",
     coverImageId: "",
   });
@@ -78,7 +78,13 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!createdUser) {
     throw new ApiError(500, "Error while creating new user");
   }
-  res.send(new ApiResponse(200, {createdUser, accesstoken}, "User created successfully"));
+  res.send(
+    new ApiResponse(
+      200,
+      { createdUser, accesstoken },
+      "User created successfully"
+    )
+  );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -215,38 +221,46 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "fetched user successfully"));
 });
 const getUser = asyncHandler(async (req, res) => {
-  const{userid}=req.body;
+  const { userid } = req.body;
   // console.log(req.body)
-  if(!userid){
+  if (!userid) {
     throw new ApiError(400, "user id not found");
   }
-  const user= await User.findById(userid);
-  res
-    .status(200)
-    .json(new ApiResponse(200, user, "fetched user successfully"));
+  const user = await User.findById(userid);
+  res.status(200).json(new ApiResponse(200, user, "fetched user successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
-  if (!fullName || !email) {
-    throw new ApiError(400, "fullname and email both are required");
+  if (!fullName && !email) {
+    throw new ApiError(400, "fullname or email is required");
   }
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      $set: {
-        fullname: fullName,
-        email: email,
-      },
-    },
-    { new: true }
-  ).select("-password");
+  const user= await User.findById(req.user._id);
+  if(fullName){
+    user.fullname=fullName
+  }
+  if(email){
+    user.email=email;
+  }
+  user.save()
+  // const user = await User.findByIdAndUpdate(
+  //   req.user._id,
+  //   {
+  //     $set: {
+  //       fullname: fullName,
+  //       email: email,
+  //     },
+  //   },
+  //   { new: true }
+  // ).select("-password");
   res
     .status(200)
     .json(new ApiResponse(200, user, "account details updated successfully"));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
+  console.log(req); // Check the uploaded file
+
   const localpath = req.file.path;
   if (!localpath) {
     throw new ApiError(400, "avatar file is required");
@@ -261,7 +275,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   user.avatarId = avatar.public_id;
   user.save({ validateBeforeSave: false });
   const updateduser = await User.findById(req.user._id).select("-password");
-  if(oldAvatarId){
+  if (oldAvatarId) {
     const result = await deletefromcloudinary(oldAvatarId);
   }
   return res
@@ -283,7 +297,7 @@ const updateUserCover = asyncHandler(async (req, res) => {
   user.coverImageId = cover.public_id;
   user.save({ validateBeforeSave: false });
   const updateduser = await User.findById(req.user._id).select("-password");
-  if(oldcoverImageId){
+  if (oldcoverImageId) {
     const result = await deletefromcloudinary(oldcoverImageId);
   }
   return res
@@ -364,7 +378,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     {
       $match: {
         _id: new mongoose.Types.ObjectId(req.user._id),
-      }
+      },
     },
     {
       $lookup: {
@@ -372,48 +386,48 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         localField: "_id",
         foreignField: "owner",
         as: "stats",
-        pipeline:[
+        pipeline: [
           {
-            $lookup:{
-              from:"likes",
-              localField:"_id",
-              foreignField:"video",
-              as:"videolikes"
-            }
+            $lookup: {
+              from: "likes",
+              localField: "_id",
+              foreignField: "video",
+              as: "videolikes",
+            },
           },
           {
-            $addFields:{
-              numberOfLikes:{
-                $size: "$videolikes"
-              }
-            }
+            $addFields: {
+              numberOfLikes: {
+                $size: "$videolikes",
+              },
+            },
           },
           {
-            $group:{
-              _id:null,
-              totalLikes: {$sum: "$numberOfLikes"},
-              totalViews: {$sum: "$views"},
-              totalVideos: { $sum: 1 } 
-            }
-          }
-        ]
-      }
+            $group: {
+              _id: null,
+              totalLikes: { $sum: "$numberOfLikes" },
+              totalViews: { $sum: "$views" },
+              totalVideos: { $sum: 1 },
+            },
+          },
+        ],
+      },
     },
     {
       $addFields: {
-        stats: {$first:"$stats"}
-      }
+        stats: { $first: "$stats" },
+      },
     },
   ]);
   return res
-  .status(200)
-  .json(
+    .status(200)
+    .json(
       new ApiResponse(
-          200,
-          user[0].watchHistory,
-          "Watch history fetched successfully"
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
       )
-  )
+    );
 });
 
 export {
@@ -428,5 +442,5 @@ export {
   updateUserCover,
   getUserChannelProfile,
   getWatchHistory,
-  getUser
+  getUser,
 };
