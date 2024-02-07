@@ -11,6 +11,7 @@ import {
   updateAccountDetails,
   getUserChannelProfile,
   getWatchHistory,
+  getUser
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import authmiddleware from "../middlewares/auth.middleware.js";
@@ -31,6 +32,7 @@ router.route("/register").post(
 );
 
 router.route("/login").post(loginUser);
+router.route("/getuser").post(getUser);
 
 //secured
 router.route("/logout").post(authmiddleware, logoutUser);

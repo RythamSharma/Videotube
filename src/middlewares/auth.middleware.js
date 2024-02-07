@@ -7,7 +7,7 @@ const authmiddleware = asyncHandler( async (req, res, next) => {
  try {
      const accessToken =
        req.cookies?.accessToken ||
-       req.headers["Authorization"]?.replace("bearer ", "");
+       req.headers["authorization"]?.replace("bearer ", "");
      if (!accessToken) {
        throw new ApiError(401, "access token not provided");
      }

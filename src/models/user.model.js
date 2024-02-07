@@ -8,7 +8,7 @@ const userSchema = new Schema(
             type: String,
             required: true,
             unique: true,
-            lowecase: true,
+            lowercase: true,
             trim: true, 
             index: true
         },
@@ -16,7 +16,7 @@ const userSchema = new Schema(
             type: String,
             required: true,
             unique: true,
-            lowecase: true,
+            lowercase: true,
             trim: true, 
         },
         fullname: {
@@ -27,14 +27,12 @@ const userSchema = new Schema(
         },
         avatar: {
             type: String, // cloudinary url
-            required: true,
         },
         coverImage: {
             type: String, // cloudinary url
         },
         avatarId: {
             type: String, // cloudinary public id
-            required: true,
         },
         coverImageId: {
             type: String, // cloudinary public id
