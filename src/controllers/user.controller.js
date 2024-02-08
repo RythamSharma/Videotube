@@ -105,11 +105,11 @@ const loginUser = asyncHandler(async (req, res) => {
   }
   const user = await User.findOne({ $or: [{ username }, { email }] });
   if (!user) {
-    throw new ApiError(401, "User not Found");
+   return res.status(401).json("user not found")
   }
   const ispasswordvalid = await user.isPasswordCorrect(password);
   if (!ispasswordvalid) {
-    throw new ApiError(401, "Invalid Credentials Entered");
+    return res.status(401).json("Invalid Credentials")
   }
   const { accesstoken, refreshtoken } = await generateAccessAndRefreshToken(
     user._id
@@ -205,7 +205,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user?._id);
   const ispasscorrect = await user.isPasswordCorrect(oldpass);
   if (!ispasscorrect) {
-    throw new ApiError(400, "wrong password entered");
+    return res.status(401).send("Wrong password")
   }
   user.password = newpass;
   await user.save({ validateBeforeSave: false });
