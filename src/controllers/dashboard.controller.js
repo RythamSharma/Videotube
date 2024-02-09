@@ -112,9 +112,46 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     if (!channelId) {
       throw new ApiError(400, "ChannelId is required");
     }
-    const uploadedVideos = await Video.find({
-      owner: new mongoose.Types.ObjectId(channelId),
-    });
+    const uploadedVideos = await Video.aggregate([
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(channelId),
+        },
+      },
+      {
+        $lookup:
+          {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "result",
+          },
+      },
+      {
+        $addFields:
+          {
+            ownerdetails: {
+              $first: "$result",
+            },
+          },
+      },
+      {   
+        $project:
+          {
+            thumbnail: 1,
+            videoFile: 1,
+            title: 1,
+            owner: 1,
+            createdAt: 1,
+            duration: 1,
+            views: 1,
+            ownerdetails: 1,
+            _id: 1,
+            description: 1,
+            isPublished: 1,
+          },
+      },
+    ])
     if (!uploadedVideos) {
       throw new ApiError(400, "No videos uploaded by this user");
     }

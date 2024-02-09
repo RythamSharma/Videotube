@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getSubscribedChannels,
   getUserChannelSubscribers,
+  isSubscribed,
   toggleSubscription,
 } from "../controllers/subscription.controller.js";
 import authmiddleware from "../middlewares/auth.middleware.js";
@@ -15,5 +16,6 @@ router
   .post(toggleSubscription);
 
 router.route("/u/:channelId").get(getUserChannelSubscribers);
+router.route("/b/:channelId").get(isSubscribed)
 
 export default router;

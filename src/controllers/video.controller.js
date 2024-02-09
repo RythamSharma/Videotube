@@ -11,20 +11,19 @@ import { deleteVideofromcloudinary } from "../utils/cloudinary.js";
 const getAllVideos = asyncHandler(async (req, res) => {
   //TODO: get all videos based on query, sort, pagination
   try {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-    if (!userId) {
-      throw new ApiError(401, "User Id required");
-    }
+    const { page = 1, limit = 9, query, sortBy, sortType } = req.query;
+
     const sortfield = sortBy || 'createdAt'
     const sorttype = sortType==='desc'?-1:1
     const allvideos = await Video.aggregate([
-        {
-            $match:{
-                title:{
-                    $regex :new RegExp(query, 'i'),
-                }
-            }
-        },
+      {
+        $match:
+          {
+            title:{
+              $regex :new RegExp(query, 'i'),
+          }
+          },
+      },
       {
         $skip: (page - 1) * limit,
       },
@@ -32,11 +31,45 @@ const getAllVideos = asyncHandler(async (req, res) => {
         $limit: parseInt(limit, 10),
       },
       {
-        $sort:{
+        $sort:
+          {
             [sortfield]:sorttype
-        }
-      }
-    ]);
+          },
+      },
+      {
+        $lookup:
+          {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "result",
+          },
+      },
+      {
+        $addFields:
+          {
+            ownerdetails: {
+              $first: "$result",
+            },
+          },
+      },
+      {
+        $project:
+          {
+            thumbnail: 1,
+            videoFile: 1,
+            title: 1,
+            owner: 1,
+            createdAt: 1,
+            duration: 1,
+            views: 1,
+            ownerdetails: 1,
+            _id: 1,
+            description: 1,
+            isPublished: 1,
+          },
+      },
+    ])
     if(!allvideos){
         return res.status(200).send(new ApiResponse(200, {}, "No Videos found"))
     }

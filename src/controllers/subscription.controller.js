@@ -31,6 +31,23 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Error while subscription toggle");
   }
 });
+const isSubscribed = asyncHandler(async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const IsSubscribed = await Subscription.findOne({
+      $and: [{ channel: channelId }, { subscriber: req.user._id }],
+    });
+    if (IsSubscribed) {
+      return res.status(200).send(new ApiResponse(200, { IsSubscribed: true }));
+    } else {
+      return res
+        .status(201)
+        .send(new ApiResponse(201, { isSubscribed: false }));
+    }
+  } catch (error) {
+    throw new ApiError(401, "Error while subscription check");
+  }
+});
 
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {
@@ -114,4 +131,4 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
   }
 });
 
-export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels };
+export { toggleSubscription, getUserChannelSubscribers, getSubscribedChannels ,isSubscribed };
