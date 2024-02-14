@@ -94,6 +94,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     let videoFilelocalpath;
     let thumbnaillocalpath;
+    console.log(req.files)
     if (
       req.files &&
       Array.isArray(req.files.videoFile) &&
