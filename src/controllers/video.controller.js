@@ -196,14 +196,14 @@ const updateVideo = asyncHandler(async (req, res) => {
       videoToBeUpdated.description = req.body.description;
     }
     if (req.file) {
-      const deletedthumbnail = await deletefromcloudinary(
-        videoToBeUpdated.thumbnailId
-      );
       const thumbnailLocalpath = req.file.path;
       if (!thumbnailLocalpath) {
         throw new ApiError(401, "file upload failed in multer");
       }
       const thumbnail = await uploadOnCloudinary(thumbnailLocalpath);
+      const deletedthumbnail = await deletefromcloudinary(
+        videoToBeUpdated.thumbnailId
+      );
       videoToBeUpdated.thumbnail = thumbnail.url;
       videoToBeUpdated.thumbnailId = thumbnail.public_id;
     }
@@ -298,9 +298,34 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 });
 
+const getVIdeosByOwnerId = asyncHandler(async (req, res)=>{
+  try {
+    const userid=req.user._id;
+    const videos = await Video.find({owner:userid})
+    if(!videos){
+     return res.status(400).send("No videos uploaded by this user")
+    } 
+    res
+    .status(200)
+    .send(
+      new ApiResponse(
+        200,
+        videos,
+        "Videos fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(
+      500,
+      ` following error occured while fetching the videos by owner id ${error} `
+    );
+  }
+})
+
 export {
   getAllVideos,
   publishAVideo,
+  getVIdeosByOwnerId,
   getVideoById,
   updateVideo,
   deleteVideo,
