@@ -7,22 +7,23 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deletefromcloudinary } from "../utils/cloudinary.js";
 import { deleteVideofromcloudinary } from "../utils/cloudinary.js";
+import axios from "axios";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   //TODO: get all videos based on query, sort, pagination
   try {
     const { page = 1, limit = 9, query, sortBy, sortType } = req.query;
 
-    const sortfield = sortBy || 'createdAt'
-    const sorttype = sortType==='desc'?-1:1
+    const sortfield = sortBy || "createdAt";
+    const sorttype = sortType === "desc" ? -1 : 1;
     const allvideos = await Video.aggregate([
       {
-        $match:
-          {
-            title:{
-              $regex :new RegExp(query, 'i'),
-          }
+        $match: {
+          title: {
+            $regex: new RegExp(query, "i"),
           },
+          isPublished: true,
+        },
       },
       {
         $skip: (page - 1) * limit,
@@ -31,49 +32,47 @@ const getAllVideos = asyncHandler(async (req, res) => {
         $limit: parseInt(limit, 10),
       },
       {
-        $sort:
-          {
-            [sortfield]:sorttype
-          },
+        $sort: {
+          [sortfield]: sorttype,
+        },
       },
       {
-        $lookup:
-          {
-            from: "users",
-            localField: "owner",
-            foreignField: "_id",
-            as: "result",
-          },
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "result",
+        },
       },
       {
-        $addFields:
-          {
-            ownerdetails: {
-              $first: "$result",
-            },
+        $addFields: {
+          ownerdetails: {
+            $first: "$result",
           },
+        },
       },
       {
-        $project:
-          {
-            thumbnail: 1,
-            videoFile: 1,
-            title: 1,
-            owner: 1,
-            createdAt: 1,
-            duration: 1,
-            views: 1,
-            ownerdetails: 1,
-            _id: 1,
-            description: 1,
-            isPublished: 1,
-          },
+        $project: {
+          thumbnail: 1,
+          videoFile: 1,
+          title: 1,
+          owner: 1,
+          createdAt: 1,
+          duration: 1,
+          views: 1,
+          ownerdetails: 1,
+          _id: 1,
+          description: 1,
+          isPublished: 1,
+        },
       },
-    ])
-    if(!allvideos){
-        return res.status(200).send(new ApiResponse(200, {}, "No Videos found"))
+    ]);
+    if (!allvideos) {
+      return res.status(200).send(new ApiResponse(200, {}, "No Videos found"));
     }
-    return res.status(201).send(new ApiResponse(201, allvideos, "fetched videos based on query"))
+    return res
+      .status(201)
+      .send(new ApiResponse(201, allvideos, "fetched videos based on query"));
   } catch (error) {
     throw new ApiError(
       501,
@@ -94,7 +93,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     let videoFilelocalpath;
     let thumbnaillocalpath;
-    console.log(req.files)
+    console.log(req.files);
     if (
       req.files &&
       Array.isArray(req.files.videoFile) &&
@@ -158,8 +157,8 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!videofile) {
       throw new ApiError(401, "video not found");
     }
-    if(!videofile.isPublished){
-      throw new ApiError(401, "Video Unpublished")
+    if (!videofile.isPublished) {
+      throw new ApiError(401, "Video Unpublished");
     }
     res
       .status(200)
@@ -224,7 +223,34 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
   }
 });
+const range = (size, options) => {
+  const { combine } = options;
+  const chunkSize = 1 * 1024 * 1024; // 1 MB chunks (adjust as needed)
+  const parts = [];
 
+  for (let start = 0; start < size; start += chunkSize) {
+    const end = Math.min(start + chunkSize, size) - 1;
+    parts.push({ start, end, combine });
+  }
+
+  return parts;
+};
+
+  const addVideoViews = asyncHandler(async (req, res) =>{
+   try {
+     const {videoId} = req.body;
+     console.log(videoId)
+     const video = await Video.findById(videoId);
+     if(!video){
+       throw new ApiError(404, "Video not found");
+     }
+     video.views += 1;
+     await video.save();
+     res.status(200).send(new ApiResponse(200, video, "Video views updated"));
+   } catch (error) {
+    return res.status(500).send(`Internal Server Error ${error} `);
+   }
+  })
 const deleteVideo = asyncHandler(async (req, res) => {
   try {
     const { videoId } = req.params;
@@ -298,29 +324,23 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 });
 
-const getVIdeosByOwnerId = asyncHandler(async (req, res)=>{
+const getVIdeosByOwnerId = asyncHandler(async (req, res) => {
   try {
-    const userid=req.user._id;
-    const videos = await Video.find({owner:userid})
-    if(!videos){
-     return res.status(400).send("No videos uploaded by this user")
-    } 
+    const userid = req.user._id;
+    const videos = await Video.find({ owner: userid });
+    if (!videos) {
+      return res.status(400).send("No videos uploaded by this user");
+    }
     res
-    .status(200)
-    .send(
-      new ApiResponse(
-        200,
-        videos,
-        "Videos fetched successfully"
-      )
-    );
+      .status(200)
+      .send(new ApiResponse(200, videos, "Videos fetched successfully"));
   } catch (error) {
     throw new ApiError(
       500,
       ` following error occured while fetching the videos by owner id ${error} `
     );
   }
-})
+});
 
 export {
   getAllVideos,
@@ -328,6 +348,7 @@ export {
   getVIdeosByOwnerId,
   getVideoById,
   updateVideo,
+  addVideoViews,
   deleteVideo,
   togglePublishStatus,
 };

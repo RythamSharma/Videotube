@@ -182,6 +182,7 @@ const yourChannel = asyncHandler(async (req, res) => {
       {
         $match: {
           owner: req.user._id,
+          isPublished: true,
         },
       },
       {
@@ -248,6 +249,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
       {
         $match: {
           owner: new mongoose.Types.ObjectId(channelId),
+          isPublished: true,
         },
       },
       {
