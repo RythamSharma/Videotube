@@ -93,7 +93,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
     let videoFilelocalpath;
     let thumbnaillocalpath;
-    console.log(req.files);
+    // console.log(req.files);
     if (
       req.files &&
       Array.isArray(req.files.videoFile) &&
@@ -153,16 +153,79 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!videoId) {
       throw new ApiError(401, "video Id is required");
     }
-    const videofile = await Video.findById(videoId);
-    if (!videofile) {
+   const videofile = await Video.aggregate( [
+    {
+      $match:
+        /**
+         * query: The query in MQL.
+         */
+        {
+          _id: new mongoose.Types.ObjectId(videoId),
+        },
+    },
+    {
+      $lookup:
+        /**
+         * from: The target collection.
+         * localField: The local join field.
+         * foreignField: The target join field.
+         * as: The name for the results.
+         * pipeline: Optional pipeline to run on the foreign collection.
+         * let: Optional variables to use in the pipeline field stages.
+         */
+        {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "result",
+        },
+    },
+    {
+      $addFields:
+        /**
+         * newField: The new field name.
+         * expression: The new field expression.
+         */
+        {
+          likes: {
+            $size: "$result",
+          },
+        },
+    },
+    {
+      $project:
+        /**
+         * specifications: The fields to
+         *   include or exclude.
+         */
+        {
+          videoFile: 1,
+          videoFileId: 1,
+          title: 1,
+          duration: 1,
+          isPublished: 1,
+          createdAt: 1,
+          thumbnail: 1,
+          thumbnailId: 1,
+          description: 1,
+          views: 1,
+          updatedAt: 1,
+          likes: 1,
+          owner: 1,
+          _id: 1,
+        },
+    },
+  ])
+    if (videofile.length==0) {
       throw new ApiError(401, "video not found");
     }
-    if (!videofile.isPublished) {
+    // console.log(videofile[0])
+    if (!videofile[0].isPublished) {
       throw new ApiError(401, "Video Unpublished");
     }
     res
       .status(200)
-      .send(new ApiResponse(200, videofile, "video fetched successfully"));
+      .send(new ApiResponse(200, videofile[0], "video fetched successfully"));
   } catch (error) {
     throw new ApiError(
       500,
@@ -223,23 +286,23 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
   }
 });
-const range = (size, options) => {
-  const { combine } = options;
-  const chunkSize = 1 * 1024 * 1024; // 1 MB chunks (adjust as needed)
-  const parts = [];
+// const range = (size, options) => {
+//   const { combine } = options;
+//   const chunkSize = 1 * 1024 * 1024; // 1 MB chunks (adjust as needed)
+//   const parts = [];
 
-  for (let start = 0; start < size; start += chunkSize) {
-    const end = Math.min(start + chunkSize, size) - 1;
-    parts.push({ start, end, combine });
-  }
+//   for (let start = 0; start < size; start += chunkSize) {
+//     const end = Math.min(start + chunkSize, size) - 1;
+//     parts.push({ start, end, combine });
+//   }
 
-  return parts;
-};
+//   return parts;
+// };
 
   const addVideoViews = asyncHandler(async (req, res) =>{
    try {
      const {videoId} = req.body;
-     console.log(videoId)
+    //  console.log(videoId)
      const video = await Video.findById(videoId);
      if(!video){
        throw new ApiError(404, "Video not found");
@@ -261,7 +324,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if (!videoToBeDeleted) {
       throw new ApiError(401, "error in mongo call");
     }
-    console.log(videoToBeDeleted);
+    // console.log(videoToBeDeleted);
     const deletedcloudvideo = await deleteVideofromcloudinary(
       videoToBeDeleted.videoFileId
     );
