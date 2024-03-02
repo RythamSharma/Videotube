@@ -12,6 +12,7 @@ echo "pushing to origin"
 branch=$(git branch --show-current)
 git push -u origin $branch
 echo "pushed to branch"
+rm -rf ./node_modules
 echo "building docker file"
 docker build . -t rytham/videotube-backend:latest
 docker push rytham/videotube-backend
