@@ -12,19 +12,34 @@ const getVideoComments = asyncHandler(async (req, res) => {
       throw new ApiError(401, "video id is required in params");
     }
     const { page = 1, limit = 10 } = req.query;
+
     const allcomments = await Comment.aggregate([
       {
-        $match: {
-          video: new mongoose.Types.ObjectId(videoId),
-        },
+        $match:
+          {
+            video: new mongoose.Types.ObjectId(videoId),
+          },
       },
       {
-        $skip: (page - 1) * limit,
+        $sort:
+          {
+            createdAt: -1,
+          },
       },
-      {
-        $limit: parseInt(limit, 10),
-      },
-    ]);
+    ])
+    // const allcomments = await Comment.aggregate([
+    //   {
+    //     $match: {
+    //       video: new mongoose.Types.ObjectId(videoId),
+    //     },
+    //   },
+    //   {
+    //     $skip: (page - 1) * limit,
+    //   },
+    //   {
+    //     $limit: parseInt(limit, 10),
+    //   },
+    // ]);
     res
       .status(200)
       .send(new ApiResponse(200, allcomments, "comments fetched successfully"));
