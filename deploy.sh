@@ -13,6 +13,6 @@ branch=$(git branch --show-current)
 git push -u origin $branch
 echo "pushed to branch"
 echo "building docker file"
-docker build -t rytham/videotube-backend
+docker build -t rytham/videotube-backend:latest
 docker push rytham/videotube-backend
 echo "build complete"
