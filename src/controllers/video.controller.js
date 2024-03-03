@@ -8,6 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deletefromcloudinary } from "../utils/cloudinary.js";
 import { deleteVideofromcloudinary } from "../utils/cloudinary.js";
 import axios from "axios";
+import { Like } from "../models/like.model.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   //TODO: get all videos based on query, sort, pagination
@@ -153,52 +154,29 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!videoId) {
       throw new ApiError(401, "video Id is required");
     }
-   const videofile = await Video.aggregate( [
-    {
-      $match:
-        /**
-         * query: The query in MQL.
-         */
-        {
+    const videofile = await Video.aggregate([
+      {
+        $match: {
           _id: new mongoose.Types.ObjectId(videoId),
         },
-    },
-    {
-      $lookup:
-        /**
-         * from: The target collection.
-         * localField: The local join field.
-         * foreignField: The target join field.
-         * as: The name for the results.
-         * pipeline: Optional pipeline to run on the foreign collection.
-         * let: Optional variables to use in the pipeline field stages.
-         */
-        {
+      },
+      {
+        $lookup: {
           from: "likes",
           localField: "_id",
           foreignField: "video",
           as: "result",
         },
-    },
-    {
-      $addFields:
-        /**
-         * newField: The new field name.
-         * expression: The new field expression.
-         */
-        {
+      },
+      {
+        $addFields: {
           likes: {
             $size: "$result",
           },
         },
-    },
-    {
-      $project:
-        /**
-         * specifications: The fields to
-         *   include or exclude.
-         */
-        {
+      },
+      {
+        $project: {
           videoFile: 1,
           videoFileId: 1,
           title: 1,
@@ -214,9 +192,19 @@ const getVideoById = asyncHandler(async (req, res) => {
           owner: 1,
           _id: 1,
         },
-    },
-  ])
-    if (videofile.length==0) {
+      },
+    ]);
+    const liked = await Like.find({
+      video: new mongoose.Types.ObjectId(videoId),
+      likedBy: req.user._id,
+    });
+    if (liked.length > 0) {
+      videofile[0].liked=true;
+    }
+    else{
+      videofile[0].liked=false;
+    }
+    if (videofile.length == 0) {
       throw new ApiError(401, "video not found");
     }
     // console.log(videofile[0])
@@ -225,7 +213,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
     res
       .status(200)
-      .send(new ApiResponse(200, videofile[0], "video fetched successfully"));
+      .json(new ApiResponse(200, videofile[0], "video fetched successfully"));
   } catch (error) {
     throw new ApiError(
       500,
@@ -299,21 +287,21 @@ const updateVideo = asyncHandler(async (req, res) => {
 //   return parts;
 // };
 
-  const addVideoViews = asyncHandler(async (req, res) =>{
-   try {
-     const {videoId} = req.body;
+const addVideoViews = asyncHandler(async (req, res) => {
+  try {
+    const { videoId } = req.body;
     //  console.log(videoId)
-     const video = await Video.findById(videoId);
-     if(!video){
-       throw new ApiError(404, "Video not found");
-     }
-     video.views += 1;
-     await video.save();
-     res.status(200).send(new ApiResponse(200, video, "Video views updated"));
-   } catch (error) {
+    const video = await Video.findById(videoId);
+    if (!video) {
+      throw new ApiError(404, "Video not found");
+    }
+    video.views += 1;
+    await video.save();
+    res.status(200).send(new ApiResponse(200, video, "Video views updated"));
+  } catch (error) {
     return res.status(500).send(`Internal Server Error ${error} `);
-   }
-  })
+  }
+});
 const deleteVideo = asyncHandler(async (req, res) => {
   try {
     const { videoId } = req.params;
