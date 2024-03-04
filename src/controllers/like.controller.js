@@ -133,11 +133,23 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         $addFields: {
           Videodetails: { $first: "$result" },
         },
+      },{
+        $lookup: {
+          from: "users",
+          localField: "likedBy",
+          foreignField: "_id",
+          as: "result2"
+        }
+      },{
+        $addFields: {
+          Ownerdetails: {$first : "$result2" },
+        },
       },
       {
         $project: {
           likedBy: 1,
           Videodetails: 1,
+          Ownerdetails:1
         },
       },
     ]);
