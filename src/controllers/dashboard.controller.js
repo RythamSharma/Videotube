@@ -82,10 +82,22 @@ const getChannelStats = asyncHandler(async (req, res) => {
         },
       },
     ]);
+    const isSubscribed= await Subscription.findOne({
+      subscriber: req.user._id,
+      channel: channelId
+    })
+    // console.log(isSubscribed)
+    let Subscribed
+    if(isSubscribed){
+      Subscribed = true;
+    }
+    else{
+      Subscribed=false;
+    }
     if (!ChannelStatsAndDetails) {
       throw new ApiError(
         500,
-        "error is aggregation pipeline of stats and details of channel"
+        "error in aggregation pipeline of stats and details of channel"
       );
     }
     res
@@ -93,8 +105,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
       .send(
         new ApiResponse(
           200,
-          ChannelStatsAndDetails,
-          "Channel Stats and Details fetched successfully"
+          {ChannelStatsAndDetails, Subscribed}
         )
       );
   } catch (error) {
